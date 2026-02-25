@@ -8,7 +8,15 @@
 
 ## Why SenseType?
 
-Every voice typing tool on GitHub uses OpenAI Whisper. SenseType is different:
+- **Type anywhere** -- press a hotkey, speak, and text appears at your cursor in *any* Windows application (browser, Word, VS Code, WeChat, etc.)
+- **Simple and lightweight** -- a single Python package, no complex setup, no background services
+- **Free and open source** -- no subscriptions, no API keys, no usage limits
+- **Best-in-class Chinese** -- powered by [SenseVoice-Small](https://github.com/FunAudioLLM/SenseVoice), which achieves 15-20% lower error rate than Whisper on Chinese
+- **Blazing fast** -- non-autoregressive architecture processes 10s of audio in ~70ms, 15x faster than Whisper-Large
+- **Fully local** -- all processing happens on your machine, nothing is uploaded
+- **Just works** -- auto-detects GPU/CPU, built-in punctuation and voice activity detection, no post-processing needed
+
+### SenseType vs Whisper-based tools
 
 | | SenseType | Whisper-based tools |
 |---|---|---|
@@ -23,9 +31,7 @@ Speed and accuracy numbers are from [SenseVoice's published benchmarks](https://
 
 ## Features
 
-- **Press hotkey, speak, release** -- text appears at your cursor in any application
 - **Two input modes**: hold-to-talk or toggle (press once to start, again to stop)
-- **Fully local** -- no cloud, no API keys, no internet needed after model download
 - **Auto GPU/CPU selection** -- detects VRAM (4GB threshold), falls back to CPU automatically
 - **Chinese-first** -- optimized for Chinese and Chinese-English mixed input; also supports English, Japanese, Korean, Cantonese
 - **Visual feedback** -- floating status bar with live volume meter, system tray icon
