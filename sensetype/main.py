@@ -3,6 +3,7 @@ import numpy as np
 import keyboard
 
 from .config import HOTKEY, SILENCE_THRESHOLD, MODE, OVERLAY_ENABLED
+from .i18n import t
 from .recorder import Recorder
 from .transcriber import Transcriber
 from .input_paste import paste_text
@@ -28,12 +29,12 @@ def _modifiers_active(modifiers: list[str]) -> bool:
 
 
 def main():
-    print("=== SenseType 本地语音输入 ===")
+    print(t("app.title"))
     if MODE == "toggle":
-        print(f"快捷键: 按 {HOTKEY} 开始/停止录音（toggle模式）")
+        print(t("app.hotkey_toggle", hotkey=HOTKEY))
     else:
-        print(f"快捷键: 按住 {HOTKEY} 说话，松开识别（hold模式）")
-    print("按 Esc 退出\n")
+        print(t("app.hotkey_hold", hotkey=HOTKEY))
+    print(t("app.press_esc") + "\n")
 
     # 托盘图标（退出回调会触发 keyboard 的 Esc）
     tray = TrayIcon(on_quit=lambda: keyboard.press_and_release("esc"))
@@ -51,7 +52,7 @@ def main():
 
     def on_recognize(audio: np.ndarray):
         if np.max(np.abs(audio)) < SILENCE_THRESHOLD:
-            print("[跳过] 音频过于安静")
+            print(t("skip.silent"))
             tray.set_state(STATE_IDLE)
             if overlay:
                 overlay.hide()
@@ -59,15 +60,15 @@ def main():
         tray.set_state(STATE_RECOGNIZING)
         if overlay:
             overlay.show_recognizing()
-        print("[识别] 正在识别...")
+        print(t("recog.start"))
         text = transcriber.transcribe(audio)
         if text:
-            print(f"[结果] {text}")
+            print(t("recog.result", text=text))
             paste_text(text)
             if overlay:
                 overlay.show_result(text)
         else:
-            print("[识别] 未识别到文字")
+            print(t("recog.empty"))
             if overlay:
                 overlay.hide()
         tray.set_state(STATE_IDLE)
@@ -118,12 +119,12 @@ def main():
         keyboard.on_press_key(trigger, on_trigger_down, suppress=False)
         keyboard.on_release_key(trigger, on_trigger_up, suppress=False)
 
-    print("就绪，等待语音输入...\n")
+    print(t("app.ready") + "\n")
     keyboard.wait("esc")
     if overlay:
         overlay.stop()
     tray.stop()
-    print("\n已退出")
+    print("\n" + t("app.exited"))
 
 
 if __name__ == "__main__":

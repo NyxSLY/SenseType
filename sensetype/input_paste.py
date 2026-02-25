@@ -3,6 +3,7 @@ import ctypes
 import threading
 from ctypes import wintypes
 from .config import PASTE_DELAY_MS
+from .i18n import t
 
 # --- Windows API 常量 ---
 CF_UNICODETEXT = 13
@@ -74,7 +75,7 @@ def paste_text(text: str):
     with _paste_lock:
         ok = _set_clipboard(text)
         if not ok:
-            print("[粘贴] 写入剪贴板失败")
+            print(t("paste.fail"))
             return
         time.sleep(0.05)
         _send_ctrl_v()

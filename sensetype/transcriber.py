@@ -2,6 +2,7 @@ import io
 import sys
 import numpy as np
 from .config import MODEL_ID, DEVICE, LANGUAGE, USE_ITN, VAD_MAX_SEGMENT_MS
+from .i18n import t
 
 MIN_VRAM_GB = 4  # 低于此值自动回退CPU（T400=2GB会OOM）
 
@@ -13,26 +14,27 @@ def _resolve_device(device_cfg: str) -> str:
     try:
         import torch
         if not torch.cuda.is_available():
-            print("[设备] CUDA 不可用，使用 CPU")
+            print(t("device.no_cuda"))
             return "cpu"
-        vram_gb = torch.cuda.get_device_properties(0).total_mem / (1024 ** 3)
+        vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
         name = torch.cuda.get_device_name(0)
-        print(f"[设备] 检测到 GPU: {name}（显存 {vram_gb:.1f}GB）")
+        print(t("device.gpu_found", name=name, vram=f"{vram_gb:.1f}"))
         if vram_gb < MIN_VRAM_GB:
-            print(f"[设备] 显存 < {MIN_VRAM_GB}GB，回退 CPU（避免 OOM）")
+            print(t("device.low_vram", min_gb=MIN_VRAM_GB))
             return "cpu"
         return "cuda:0"
-    except Exception:
-        print("[设备] GPU 检测失败，使用 CPU")
+    except Exception as e:
+        print(t("device.gpu_fail", error=e))
         return "cpu"
 
 
 class Transcriber:
     def __init__(self):
         device = _resolve_device(DEVICE)
-        print(f"[模型] 正在加载 {MODEL_ID}（设备: {device}，首次需下载~400MB）...")
-        # 抑制 FunASR 的 "ffmpeg is not installed" 提示（项目传 numpy 数组，不需要 ffmpeg）
-        _stderr = sys.stderr
+        print(t("model.loading", model_id=MODEL_ID, device=device))
+        # 抑制 FunASR/ModelScope 的杂项日志（版本检查、remote code警告、ffmpeg提示）
+        _stdout, _stderr = sys.stdout, sys.stderr
+        sys.stdout = io.StringIO()
         sys.stderr = io.StringIO()
         try:
             from funasr import AutoModel
@@ -44,10 +46,11 @@ class Transcriber:
                 vad_model="fsmn-vad",
                 vad_kwargs={"max_single_segment_time": VAD_MAX_SEGMENT_MS},
                 device=device,
+                disable_update=True,
             )
         finally:
-            sys.stderr = _stderr
-        print(f"[模型] 加载完成（{device}）")
+            sys.stdout, sys.stderr = _stdout, _stderr
+        print(t("model.loaded", device=device))
 
     def transcribe(self, audio: np.ndarray) -> str:
         res = self.model.generate(

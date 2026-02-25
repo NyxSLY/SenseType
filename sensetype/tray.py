@@ -2,6 +2,8 @@ import threading
 from PIL import Image, ImageDraw, ImageFont
 import pystray
 
+from .i18n import t
+
 # 状态常量
 STATE_LOADING = "loading"
 STATE_IDLE = "idle"
@@ -16,11 +18,12 @@ _COLORS = {
     STATE_RECOGNIZING: "#FF9800", # 橙色 - 识别中
 }
 
-_LABELS = {
-    STATE_LOADING: "加载中...",
-    STATE_IDLE: "就绪",
-    STATE_RECORDING: "录音中",
-    STATE_RECOGNIZING: "识别中...",
+# 状态 → i18n key
+_LABEL_KEYS = {
+    STATE_LOADING: "tray.loading",
+    STATE_IDLE: "tray.idle",
+    STATE_RECORDING: "tray.recording",
+    STATE_RECOGNIZING: "tray.recognizing",
 }
 
 
@@ -48,14 +51,18 @@ class TrayIcon:
 
     def _run(self):
         menu = pystray.Menu(
-            pystray.MenuItem(lambda item: f"状态: {_LABELS.get(self._state, self._state)}", None, enabled=False),
+            pystray.MenuItem(
+                lambda item: t("tray.status", label=t(_LABEL_KEYS.get(self._state, "tray.idle"))),
+                None,
+                enabled=False,
+            ),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("退出", self._quit),
+            pystray.MenuItem(t("tray.quit"), self._quit),
         )
         self._icon = pystray.Icon(
             name="SenseType",
             icon=_create_icon(_COLORS[self._state]),
-            title=f"SenseType - {_LABELS[self._state]}",
+            title=f"SenseType - {t(_LABEL_KEYS.get(self._state, 'tray.idle'))}",
             menu=menu,
         )
         self._icon.run()
@@ -65,7 +72,7 @@ class TrayIcon:
         self._state = state
         if self._icon:
             self._icon.icon = _create_icon(_COLORS.get(state, "#888888"))
-            self._icon.title = f"SenseType - {_LABELS.get(state, state)}"
+            self._icon.title = f"SenseType - {t(_LABEL_KEYS.get(state, 'tray.idle'))}"
 
     def _quit(self, icon, item):
         if self._icon:

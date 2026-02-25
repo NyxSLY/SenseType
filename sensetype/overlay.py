@@ -6,6 +6,8 @@ import time as _time
 
 from PIL import Image, ImageDraw, ImageTk
 
+from .i18n import t
+
 # 高 DPI 感知 — 必须在创建任何窗口前调用，否则 tkinter 按 96DPI 渲染后被系统放大导致模糊
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-Monitor DPI Aware
@@ -108,7 +110,7 @@ class Overlay:
             style |= WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE
             user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
         except Exception as e:
-            print(f"[Overlay] Win32样式设置失败: {e}")
+            print(t("overlay.win32_fail", error=e))
 
     # ════════════════ 背景渲染 ════════════════
 
@@ -234,7 +236,7 @@ class Overlay:
         dots = "." * (self._recog_step % 4)
         self._canvas.create_text(
             self.WIDTH // 2, self.HEIGHT // 2,
-            text=f"Recognizing{dots}",
+            text=f"{t('overlay.recognizing')}{dots}",
             fill=self.RECOG_COLOR,
             font=("Segoe UI Semibold", 12),
             anchor="center",
