@@ -1,6 +1,6 @@
-# 🖥️ Windows 本地语音输入部署指南
+# SenseType Windows 安装指南
 
-## （micromamba + 清华源 + GPU/CPU 自适应）
+## micromamba + 清华源 + GPU/CPU 自适应
 
 ---
 
@@ -127,8 +127,8 @@ pip config list
 # 五、创建项目环境（避免 Python 3.13）
 
 ```powershell
-micromamba create -n winvoice python=3.11 -y
-micromamba activate winvoice
+micromamba create -n sensetype python=3.11 -y
+micromamba activate sensetype
 python --version
 ```
 
@@ -213,7 +213,7 @@ pip install -r requirements.txt
 # 九、运行
 
 ```powershell
-micromamba activate winvoice
+micromamba activate sensetype
 python -m sensetype
 ```
 
@@ -237,6 +237,6 @@ python -m sensetype
 # ✅ 最终运行方式
 
 ```powershell
-micromamba activate winvoice
+micromamba activate sensetype
 python -m sensetype
 ```

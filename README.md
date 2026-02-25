@@ -1,149 +1,158 @@
 # SenseType
 
-**Local voice typing for Windows, powered by SenseVoice -- 15x faster than Whisper, with better Chinese accuracy.**
+**Windows 本地语音输入工具 — 按下快捷键说话，文字自动输入到任意应用的光标位置。**
 
-[中文](README_zh.md)
+免费、开源、完全离线、中文效果好。
 
-<!-- TODO: Add demo GIF -->
+[English](README_en.md)
 
-## Why SenseType?
+<!-- TODO: 添加演示GIF -->
 
-- **Type anywhere** -- press a hotkey, speak, and text appears at your cursor in *any* Windows application (browser, Word, VS Code, WeChat, etc.)
-- **Simple and lightweight** -- a single Python package, no complex setup, no background services
-- **Free and open source** -- no subscriptions, no API keys, no usage limits
-- **Best-in-class Chinese** -- powered by [SenseVoice-Small](https://github.com/FunAudioLLM/SenseVoice), which achieves 15-20% lower error rate than Whisper on Chinese
-- **Blazing fast** -- non-autoregressive architecture processes 10s of audio in ~70ms, 15x faster than Whisper-Large
-- **Fully local** -- all processing happens on your machine, nothing is uploaded
-- **Just works** -- auto-detects GPU/CPU, built-in punctuation and voice activity detection, no post-processing needed
+## 为什么用 SenseType
 
-### SenseType vs Whisper-based tools
+Windows 自带的语音输入（Win+H）需要联网，且中文效果一般。讯飞等商业工具要登录、要付费、要上传数据。GitHub 上现有的开源方案几乎都用 Whisper，中文不是强项。
 
-| | SenseType | Whisper-based tools |
-|---|---|---|
-| **Model** | SenseVoice-Small (Alibaba) | Whisper / faster-whisper |
-| **Architecture** | Non-autoregressive | Autoregressive |
-| **Speed** | ~70ms for 10s audio | ~1s+ for 10s audio |
-| **Chinese CER** | Lower (15-20% improvement) | Higher |
-| **Punctuation** | Built-in (ITN) | Requires post-processing |
-| **VAD** | Built-in (FSMN-VAD) | Separate setup needed |
+SenseType 解决这些问题：
 
-Speed and accuracy numbers are from [SenseVoice's published benchmarks](https://github.com/FunAudioLLM/SenseVoice).
+- **在任意位置输入** — 浏览器、Word、VS Code、微信、记事本……光标在哪，就输到哪
+- **专为 Windows 设计** — Win32 API 直接调用，不依赖额外系统组件
+- **免费开源** — 无订阅、无 API 密钥、无使用次数限制
+- **完全本地** — 所有处理在本机完成，不上传任何音频数据
+- **中文效果好** — 基于阿里 [SenseVoice-Small](https://github.com/FunAudioLLM/SenseVoice)，中文字错率比 Whisper 低 15-20%
+- **速度快** — 非自回归架构，10 秒音频推理约 70ms，比 Whisper-Large 快 15 倍
+- **开箱即用** — 自动检测 GPU/CPU、内置标点恢复和语音活动检测，无需额外配置
+- **部署指南详细** — 从零开始的 [Windows 安装指南](docs/installation.md)，含清华源配置，小白也能跟着装
 
-## Features
+## 功能
 
-- **Two input modes**: hold-to-talk or toggle (press once to start, again to stop)
-- **Auto GPU/CPU selection** -- detects VRAM (4GB threshold), falls back to CPU automatically
-- **Chinese-first** -- optimized for Chinese and Chinese-English mixed input; also supports English, Japanese, Korean, Cantonese
-- **Visual feedback** -- floating status bar with live volume meter, system tray icon
-- **Modular design** -- overlay UI is optional and replaceable, backend runs independently
-- **Zero native dependencies** -- clipboard and key simulation via Win32 API through ctypes, no pywin32 needed
+- 全局快捷键 `Ctrl+Alt+Z`，在任意应用中触发
+- 两种模式：**按住说话**（hold）/ **按一下开始再按一下停止**（toggle）
+- 中文为主，支持中英混合输入（也支持英语、日语、韩语、粤语）
+- 自动 GPU/CPU 检测 — 有显存 >= 4GB 的 GPU 用 CUDA，否则自动回退 CPU
+- 浮动状态条 — 录音时显示实时音量，识别时显示动画
+- 系统托盘图标 — 显示当前状态（加载中/就绪/录音/识别）
+- 自动标点恢复（ITN） — 不用手动加逗号句号
+- 录音自动保存 — 可配置保留数量
 
-## Quick Start
+## 快速开始
 
-**1. Create environment and install PyTorch**
+> 完整的从零安装步骤（含 micromamba 安装、清华源配置、避坑指南），请看 **[Windows 安装指南](docs/installation.md)**。
+>
+> 以下是已有 Python 环境的快速安装方式。
 
-```bash
-# Using micromamba (or conda/venv)
+**1. 创建环境 + 安装 PyTorch**
+
+```powershell
 micromamba create -n sensetype python=3.11 -y
 micromamba activate sensetype
 
-# GPU (CUDA 12.1)
+# 有 GPU（CUDA 12.1）
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# Or CPU only
+# 无 GPU
 pip install torch torchaudio
 ```
 
-**2. Install dependencies**
+**2. 安装依赖**
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
-**3. Run (requires administrator for global hotkeys)**
+**3. 运行（需管理员权限）**
 
-```bash
+```powershell
 python -m sensetype
 ```
 
-The model (~400MB) downloads automatically from ModelScope on first run.
+首次启动会从 ModelScope 下载模型（约 400MB）。
 
-## Configuration
+## 配置
 
-Edit `sensetype/config.py`:
+修改 `sensetype/config.py`：
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `HOTKEY` | `ctrl+alt+z` | Global hotkey combination |
-| `MODE` | `toggle` | `hold` = hold-to-talk, `toggle` = press to start/stop |
-| `DEVICE` | `auto` | `auto` / `cuda:0` / `cpu` |
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `HOTKEY` | `ctrl+alt+z` | 全局快捷键 |
+| `MODE` | `toggle` | `hold` = 按住说话 / `toggle` = 按一下开始再按一下停止 |
+| `DEVICE` | `auto` | `auto` = 自动检测 / `cuda:0` / `cpu` |
 | `LANGUAGE` | `auto` | `auto` / `zh` / `en` / `ja` / `ko` / `yue` |
-| `USE_ITN` | `True` | Auto-punctuation and inverse text normalization |
-| `OVERLAY_ENABLED` | `True` | Show floating status bar (`False` for headless mode) |
-| `SILENCE_THRESHOLD` | `0.01` | Skip audio below this volume level |
-| `PASTE_DELAY_MS` | `80` | Delay before restoring clipboard (ms) |
-| `AUDIO_SAVE_DIR` | `""` | Save recordings to this directory (empty = `~/sensetype_audio`) |
-| `AUDIO_KEEP_COUNT` | `10` | Number of recent recordings to keep |
+| `USE_ITN` | `True` | 自动加标点 |
+| `OVERLAY_ENABLED` | `True` | 浮动状态条开关 |
+| `SILENCE_THRESHOLD` | `0.01` | 静音判定阈值 |
+| `AUDIO_KEEP_COUNT` | `10` | 保留最近几条录音 |
 
-## Architecture
-
-```
-Hotkey Press ──► Recorder ──► Transcriber ──► Paste to Cursor
-  (keyboard)    (sounddevice)  (SenseVoice)    (Win32 API)
-                    │               │
-                    ▼               ▼
-               Overlay UI      System Tray
-               (tkinter)       (pystray)
-```
-
-The backend pipeline (hotkey -> record -> transcribe -> paste) is fully independent of the UI. Set `OVERLAY_ENABLED = False` to run without any visual feedback.
-
-```
-sensetype/
-├── __main__.py      # Entry point
-├── main.py          # Main loop: hotkey listener + orchestration
-├── config.py        # All configuration options
-├── recorder.py      # Audio recording (sounddevice, 16kHz mono)
-├── transcriber.py   # SenseVoice inference via FunASR AutoModel
-├── input_paste.py   # Win32 clipboard paste (ctypes, no pywin32)
-├── tray.py          # System tray icon (pystray)
-└── overlay.py       # Floating status bar with volume visualization (tkinter)
-```
-
-## Comparison with Alternatives
-
-| Tool | Model | Local? | Relative Speed | Chinese Quality |
-|------|-------|--------|----------------|-----------------|
-| **SenseType** | SenseVoice-Small | Yes | ~15x faster than Whisper-Large | Best (lowest CER) |
-| [whisper-writer](https://github.com/savbell/whisper-writer) | OpenAI Whisper API | No (cloud) | Depends on network | Good |
-| [whisper-typing](https://github.com/foges/whisper-typing) | faster-whisper | Yes | ~3x faster than Whisper | Good |
-| [Privox](https://github.com/nicholasgasior/privox) | Faster-Whisper + Llama 3 | Yes | Moderate | Good + LLM post-processing |
-| [whisper-ptt-windows](https://github.com/iceychris/whisper-ptt-windows) | Whisper (offline) | Yes | Baseline | Good |
-| [TalkType](https://github.com/nicholasgasior/talktype) | Whisper | Yes | Baseline | Good |
-
-Note: "Chinese Quality" comparisons are based on SenseVoice's published CER benchmarks against Whisper-Large-v3. TalkType is Linux-only.
-
-## Requirements
+## 系统要求
 
 - Windows 10/11
 - Python 3.11
-- Microphone
-- NVIDIA GPU with >= 4GB VRAM (recommended) or CPU
-- Administrator privileges (for global hotkey capture)
+- 麦克风
+- NVIDIA GPU（显存 >= 4GB，推荐）或 CPU
+- 管理员权限（全局热键需要）
 
-## Roadmap
+## 与竞品对比
 
-- [ ] Audio feedback (start/stop recording sounds)
-- [ ] Custom text post-processing rules (terminology correction)
-- [ ] Auto-start with Windows
-- [ ] VRAM stability monitoring for long sessions
-- [ ] Overlay UI improvements
+| 工具 | 模型 | 本地 | 中文质量 | 速度 | 免费 |
+|------|------|:----:|----------|------|:----:|
+| **SenseType** | SenseVoice-Small | ✅ | 优秀 | ~70ms/10s | ✅ |
+| Windows 语音输入 (Win+H) | Azure Speech | ❌ | 一般 | 取决于网络 | ✅ |
+| 讯飞语音输入 | 讯飞引擎 | ❌ | 优秀 | 取决于网络 | 部分 |
+| [buzz](https://github.com/chidiwilliams/buzz) | Whisper | ✅ | 一般 | ~1s/10s | ✅ |
+| [WhisperWriter](https://github.com/savbell/whisper-writer) | Whisper | ✅ | 一般 | ~1s/10s | ✅ |
 
-## License
+### SenseType vs Whisper
+
+| | SenseType | Whisper 系工具 |
+|---|---|---|
+| **模型** | SenseVoice-Small（阿里） | Whisper / faster-whisper |
+| **架构** | 非自回归 | 自回归 |
+| **速度** | 10s 音频 ~70ms | 10s 音频 ~1s+ |
+| **中文字错率** | 更低（改善 15-20%） | 较高 |
+| **标点恢复** | 内置 | 需额外处理 |
+| **语音活动检测** | 内置 (FSMN-VAD) | 需单独配置 |
+
+性能数据来源于 [SenseVoice 官方基准测试](https://github.com/FunAudioLLM/SenseVoice)。
+
+## 架构
+
+```
+快捷键按下 ──► 录音 ──► SenseVoice 识别 ──► 粘贴到光标
+(keyboard)   (sounddevice)  (FunASR)      (Win32 API)
+                 │                │
+                 ▼                ▼
+            浮动状态条         系统托盘
+            (tkinter)         (pystray)
+```
+
+```
+sensetype/
+├── __main__.py      # 入口
+├── main.py          # 主循环：热键监听 + 串联各模块
+├── config.py        # 所有可配置项
+├── recorder.py      # 录音（sounddevice, 16kHz mono）
+├── transcriber.py   # 语音识别（SenseVoice via FunASR）
+├── input_paste.py   # 粘贴到光标（Win32 剪贴板 + Ctrl+V）
+├── tray.py          # 系统托盘图标
+└── overlay.py       # 浮动状态条（音量可视化）
+```
+
+## 路线图
+
+- [x] 全局快捷键录音（hold / toggle）
+- [x] SenseVoice 本地推理 + VAD + ITN
+- [x] 粘贴到任意应用光标位置
+- [x] 浮动状态条 + 系统托盘
+- [x] 自动 GPU/CPU 检测
+- [ ] 录音开始/结束提示音
+- [ ] 文本后处理规则（专业术语矫正）
+- [ ] 开机自启
+- [ ] 前端 UI 美化
+
+## 许可证
 
 [MIT](LICENSE)
 
-## Acknowledgements
+## 致谢
 
-- [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) by Alibaba FunAudioLLM -- the ASR model
-- [FunASR](https://github.com/modelscope/FunASR) -- the inference framework
+- [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) — 阿里 FunAudioLLM 团队的语音识别模型
+- [FunASR](https://github.com/modelscope/FunASR) — 语音识别推理框架
