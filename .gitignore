@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+env/
+
+# micromamba artifacts
+micromamba.exe
+micromamba.tar.bz2
+info/
+Library/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
+CLAUDE.md
+sensetype/CLAUDE.md
+
+# Internal notes
+技术要点.md
+
+# Audio recordings
+*_audio/
+
+# OS
+Thumbs.db
+.DS_Store
