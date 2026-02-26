@@ -59,7 +59,18 @@ pip install torch torchaudio
 pip install -r requirements.txt
 ```
 
-**3. 运行（需管理员权限）**
+**3. 运行**
+
+双击项目根目录的启动脚本即可：
+
+| 文件 | 说明 |
+|------|------|
+| `SenseType.bat` | 带控制台窗口，可看运行日志，适合调试 |
+| `SenseType.vbs` | 无控制台窗口，双击即用，适合日常使用 |
+
+两者都会自动定位 Python 环境并以管理员权限运行。
+
+也可以手动从命令行启动（需管理员权限）：
 
 ```powershell
 python -m sensetype

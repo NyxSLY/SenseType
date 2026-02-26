@@ -60,7 +60,18 @@ pip install torch torchaudio
 pip install -r requirements.txt
 ```
 
-**3. Run (requires administrator for global hotkeys)**
+**3. Run**
+
+Double-click a launcher script in the project root:
+
+| File | Description |
+|------|-------------|
+| `SenseType.bat` | With console window, shows logs, good for debugging |
+| `SenseType.vbs` | No console window, double-click and go, best for daily use |
+
+Both auto-locate the Python environment and request administrator privileges.
+
+Or run manually from the command line (requires administrator):
 
 ```bash
 python -m sensetype
