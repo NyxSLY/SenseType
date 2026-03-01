@@ -29,15 +29,17 @@ def _modifiers_active(modifiers: list[str]) -> bool:
 
 
 def main():
+    quit_event = threading.Event()
+
     print(t("app.title"))
     if MODE == "toggle":
         print(t("app.hotkey_toggle", hotkey=HOTKEY))
     else:
         print(t("app.hotkey_hold", hotkey=HOTKEY))
-    print(t("app.press_esc") + "\n")
+    print(t("app.quit_hint") + "\n")
 
-    # 托盘图标（退出回调会触发 keyboard 的 Esc）
-    tray = TrayIcon(on_quit=lambda: keyboard.press_and_release("esc"))
+    # 托盘图标（退出回调设置 quit_event）
+    tray = TrayIcon(on_quit=lambda: quit_event.set())
     tray.start()
 
     tray.set_state(STATE_LOADING)
@@ -120,7 +122,7 @@ def main():
         keyboard.on_release_key(trigger, on_trigger_up, suppress=False)
 
     print(t("app.ready") + "\n")
-    keyboard.wait("esc")
+    quit_event.wait()
     if overlay:
         overlay.stop()
     tray.stop()
