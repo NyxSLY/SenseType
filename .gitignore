@@ -30,6 +30,13 @@ sensetype/CLAUDE.md
 技术要点.md
 Windows平台部署指南.md
 README_zh.md
+docs/zhihu-post.md
+
+# Overlay design iterations (keep only latest)
+docs/overlay-design-v1.md
+docs/overlay-design-v2.md
+sensetype/overlay_v1_*.py
+sensetype/overlay_v2_*.py
 
 # Audio recordings
 *_audio/
