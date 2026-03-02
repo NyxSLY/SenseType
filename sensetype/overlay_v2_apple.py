@@ -33,11 +33,6 @@ class Overlay:
 
     设计语言：macOS Sonoma 通知风格 — 浅色磨砂玻璃、柔和阴影、
     温暖中性色调、Segoe UI 圆润排版、克制的红色录音指示点。
-
-    V3 refinements:
-    - Dramatic red dot breathing (size + color pulsing, 0.2–1.0 range)
-    - Adaptive gain for volume bars (rolling window, 80th percentile reference)
-    - Organic waveform: neighbor smoothing, tapered bars, gradient tips, reflections
     """
 
     # ── 逻辑尺寸（96dpi 基准） ──
@@ -56,51 +51,36 @@ class Overlay:
     _SHADOW_PAD = 16       # 画布额外 padding 以容纳阴影
 
     # ══════════════ Apple 风格配色 ══════════════
-    # 深色磨砂玻璃 — 偏黑灰
-    BG_TOP = (58, 58, 62)          # 顶部：深灰（微亮）
-    BG_BOTTOM = (38, 38, 42)       # 底部：更深灰
-    FROST_ALPHA = 18               # 噪点纹理 alpha（微妙）
-    SHADOW_COLOR = (0, 0, 0, 50)   # 投影稍深
+    # 浅色磨砂玻璃 — 半透明暖白
+    BG_TOP = (255, 255, 255)       # 顶部：纯白
+    BG_BOTTOM = (243, 243, 248)    # 底部：极浅暖灰（偏紫，macOS 味道）
+    FROST_ALPHA = 22               # 噪点纹理 alpha（克制）
+    SHADOW_COLOR = (0, 0, 0, 40)   # 柔和投影
 
-    # 边框 — 极细亮边，在深色底上提示轮廓
-    BORDER_COLOR = (255, 255, 255, 20)
+    # 边框 — 极细、极浅，仅提示边界
+    BORDER_COLOR = (0, 0, 0, 18)   # 几乎看不见的描边
 
-    # 录音指示 — 经典红点
-    REC_DOT_COLOR = "#FF3B30"      # Apple 红（呼吸亮态）
-    REC_DOT_DIM = "#662020"        # 暗红（呼吸暗态，深灰底上对比大）
-    REC_LABEL_COLOR = "#FF6961"    # REC 标签：柔红
+    # 录音指示 — Apple 经典红点
+    REC_DOT_COLOR = "#E8433A"      # SF Symbols 红（录音）
+    REC_DOT_DIM = "#F5A8A4"        # 淡红（呼吸暗态）
+    REC_LABEL_COLOR = "#C4372F"    # 标签文字稍深
 
-    # 音量柱 — 暖白单色渐变（让红点做唯一色彩主角）
-    BAR_IDLE = "#4A4A50"           # 静默态：深暖灰（刚好浮出底色）
-    BAR_LOW = "#8A8A90"            # 低音量：中性灰
-    BAR_MID = "#B0B0B4"            # 中间过渡：温暖浅灰
-    BAR_HIGH = "#D0D0D3"           # 高音量：亮灰白
-    BAR_PEAK = "#E2E2E5"           # 峰值：柔暖白（不刺眼）
-    BAR_TIP_GLOW = "#F0F0F2"       # 柱顶高光：接近纯白的暖调
+    # 音量柱 — 温暖柔和
+    BAR_IDLE = "#D1D1D6"           # 静默态：系统灰
+    BAR_ACTIVE = "#E8433A"         # 有声态：与录音指示同色系
+    BAR_MID = "#F09E8C"            # 中间过渡：温暖桃粉
 
     # 识别中
-    RECOG_TEXT = "#BABABF"         # 柔灰文字（清晰但不抢眼）
-    RECOG_DOT_DIM = "#505054"     # 暗灰点（略高于底色）
-    RECOG_DOT_HI = "#98989D"     # 亮灰点（Apple 系统灰）
+    RECOG_TEXT = "#48484A"         # 深灰（systemGray2）
+    RECOG_DOT_DIM = "#D1D1D6"     # 浅灰
+    RECOG_DOT_HI = "#8E8E93"      # 中灰
 
     # 结果文字
-    RESULT_TEXT = "#E5E5EA"        # Apple systemGray6 — 柔和近白
+    RESULT_TEXT = "#1C1C1E"        # 近黑（label color）
 
     # ── 音量柱尺寸 ──
-    _BASE_BAR_W = 7                # 宽柱子，数量减半
-    _BASE_BAR_GAP = 4              # 更大间距，呼吸感
-
-    # ── 自适应增益参数 ──
-    _GAIN_WINDOW_SEC = 6.0         # 滚动窗口秒数
-    _GAIN_PERCENTILE = 0.80        # 参考峰值百分位
-    _GAIN_MIN_REF = 0.05           # 最小参考值（防止静音放大）
-    _SILENCE_GATE = 0.08           # 低于此值视为静音，bar 归零
-    _GAIN_DECAY = 0.92             # 参考值指数衰减（平滑下降）
-    _GAIN_RISE = 0.3               # 参考值上升速度（快速响应大音量）
-
-    # ── 波形平滑 ──
-    _SMOOTH_WEIGHT = 0.3           # 邻居影响权重（0=无平滑，0.5=强平滑）
-    _BAR_SCROLL_SPEED = 0.6        # 滚动速度倍率（1.0=每 tick 推一格）
+    _BASE_BAR_W = 3                # 更细的柱子
+    _BASE_BAR_GAP = 2.5            # 更密的间距
 
     # ── 字体 ──
     # Win11 Segoe UI Variable 最佳；Win10 回退 Segoe UI
@@ -158,16 +138,6 @@ class Overlay:
         # 时间线滚动 deque
         self._vol_hist: deque[float] = deque(maxlen=self._bar_n)
 
-        # 自适应增益状态
-        self._gain_ref = self._GAIN_MIN_REF       # 当前参考最大值
-        # 存储最近几秒的原始音量用于计算百分位
-        samples_per_sec = 1000 // 50  # 50ms tick -> 20 samples/sec
-        self._gain_window_size = int(self._GAIN_WINDOW_SEC * samples_per_sec)
-        self._gain_history: deque[float] = deque(maxlen=self._gain_window_size)
-
-        # 滚动速度累加器
-        self._bar_accum = 0.0
-
         # 拖动
         self._drag_ox = 0
         self._drag_oy = 0
@@ -191,7 +161,7 @@ class Overlay:
         self._root.withdraw()
         self._root.overrideredirect(True)
         self._root.attributes("-topmost", True)
-        self._root.attributes("-alpha", 0.85)
+        self._root.attributes("-alpha", 0.96)
         self._root.config(bg=self.TRANSPARENT_KEY)
         self._root.attributes("-transparentcolor", self.TRANSPARENT_KEY)
 
@@ -317,7 +287,7 @@ class Overlay:
         hd = ImageDraw.Draw(hl)
         band = int(h * 0.35)
         for hy in range(band):
-            a = int(15 * (1 - hy / band) ** 2)
+            a = int(30 * (1 - hy / band) ** 2)
             hd.line([(r, hy), (w - r, hy)], fill=(255, 255, 255, a))
         frost = Image.alpha_composite(frost, hl)
 
@@ -379,68 +349,12 @@ class Overlay:
             self._root.after_cancel(self._hide_job)
             self._hide_job = None
 
-    # ════════════════ adaptive gain ════════════════
-
-    def _update_gain(self, raw_vol: float) -> float:
-        """自适应增益：根据近期音量动态缩放，防止柱子过早触顶。
-
-        返回归一化后的 0.0-1.0 音量值。
-        静音时直接返回 0（不被自适应放大）。
-        """
-        self._gain_history.append(raw_vol)
-
-        # 静音门限：低于阈值直接归零，不让自适应增益放大底噪
-        if raw_vol < self._SILENCE_GATE:
-            return 0.0
-
-        # 计算滚动窗口的参考值（80th 百分位）
-        if len(self._gain_history) >= 3:
-            sorted_hist = sorted(self._gain_history)
-            idx = int(len(sorted_hist) * self._GAIN_PERCENTILE)
-            idx = min(idx, len(sorted_hist) - 1)
-            target_ref = max(sorted_hist[idx], self._GAIN_MIN_REF)
-        else:
-            target_ref = max(raw_vol, self._GAIN_MIN_REF)
-
-        # 平滑跟踪参考值：快升慢降
-        if target_ref > self._gain_ref:
-            # 快速上升，响应大音量
-            self._gain_ref += (target_ref - self._gain_ref) * self._GAIN_RISE
-        else:
-            # 慢速衰减，保持稳定
-            self._gain_ref = self._gain_ref * self._GAIN_DECAY + target_ref * (1.0 - self._GAIN_DECAY)
-
-        # 确保参考值不低于最小阈值
-        self._gain_ref = max(self._gain_ref, self._GAIN_MIN_REF)
-
-        # 缩放：目标是正常说话大约 80% 高度
-        scaled = raw_vol / (self._gain_ref * 1.25)
-        return max(0.0, min(1.0, scaled))
-
-    # ════════════════ waveform smoothing ════════════════
-
-    def _smooth_bars(self, values: list[float]) -> list[float]:
-        """相邻柱子互相影响，产生有机波浪形态而非锯齿状随机跳动。"""
-        if len(values) <= 2:
-            return values
-        w = self._SMOOTH_WEIGHT
-        smoothed = list(values)
-        for i in range(len(values)):
-            left = values[i - 1] if i > 0 else values[i]
-            right = values[i + 1] if i < len(values) - 1 else values[i]
-            # 加权平均：自身 (1-w) + 邻居均值 w
-            smoothed[i] = values[i] * (1.0 - w) + (left + right) / 2.0 * w
-        return smoothed
-
     # ── recording ──
 
     def _do_show_recording(self):
         self._cancel_jobs()
         self._state = "recording"
         self._vol_hist.clear()
-        self._gain_history.clear()
-        self._gain_ref = self._GAIN_MIN_REF
-        self._bar_accum = 0.0
         self._root.deiconify()
         self._draw_bg()
         self._tick_recording()
@@ -451,34 +365,21 @@ class Overlay:
 
         now = _time.time()
         cy = self._pad + self.H // 2
-        s = self._s
 
-        raw_vol = self._recorder.current_volume if self._recorder else 0.0
-        scaled_vol = self._update_gain(raw_vol)
-        # 滚动限速：累加到 1.0 才推一格，其余 tick 只更新最后一格
-        self._bar_accum += self._BAR_SCROLL_SPEED
-        if self._bar_accum >= 1.0:
-            self._bar_accum -= 1.0
-            self._vol_hist.append(scaled_vol)
-        elif self._vol_hist:
-            # 未推新格时，更新最新一格为当前值（保持实时响应）
-            self._vol_hist[-1] = scaled_vol
+        vol = self._recorder.current_volume if self._recorder else 0.0
+        self._vol_hist.append(vol)
 
-        # ── 红色录音指示点（V3: 显著呼吸脉冲 — 大小 + 颜色） ──
+        # ── 红色录音指示点（Apple 风格，柔和脉冲） ──
         self._canvas.delete("ind")
-        # 呼吸因子：宽范围 0.2 ~ 1.0，频率 ~0.6Hz（比心跳稍快）
-        breath_raw = (math.sin(now * 4.0) + 1.0) / 2.0   # 0.0 ~ 1.0
-        breath = 0.2 + 0.8 * breath_raw                    # 0.2 ~ 1.0
-
-        # 脉冲尺寸：70% ~ 100% 半径
-        dot_r_max = int(4.5 * s)
-        dot_r = max(2, int(dot_r_max * (0.7 + 0.3 * breath_raw)))
+        # 缓慢、柔和的呼吸效果（正弦，不突兀）
+        breath = 0.6 + 0.4 * ((math.sin(now * 2.5) + 1) / 2)
+        dot_r = int(4.5 * self._s)
         dot_color = _lerp_hex(self.REC_DOT_DIM, self.REC_DOT_COLOR, breath)
 
-        # 柔和光晕（随呼吸变化）
-        halo_r_max = int(8 * s)
-        halo_r = max(3, int(halo_r_max * (0.75 + 0.25 * breath_raw)))
-        halo_color = _lerp_hex("#FFFFFF", self.REC_DOT_COLOR, 0.25 + 0.25 * breath)
+        # 柔和光晕（比 V1 克制很多）
+        halo_r = int(7 * self._s)
+        halo_alpha = 0.15 + 0.15 * breath
+        halo_color = _lerp_hex("#FFFFFF", self.REC_DOT_COLOR, 0.3 + 0.2 * breath)
         self._canvas.create_oval(
             self._dot_cx - halo_r, cy - halo_r,
             self._dot_cx + halo_r, cy + halo_r,
@@ -497,102 +398,41 @@ class Overlay:
             fill=self.REC_LABEL_COLOR,
             font=self._font_label, anchor="w", tags="lbl")
 
-        # ── 有机音量波形 ──
+        # ── 音量时间线（细腻、圆角风格） ──
         self._canvas.delete("bars")
-        max_h = self.H - int(14 * s)
+        max_h = self.H - int(16 * self._s)
         hist = list(self._vol_hist)
         offset = self._bar_n - len(hist)
 
-        # 波形平滑：相邻柱子互相影响
-        smoothed = self._smooth_bars(hist)
-
-        for i, v in enumerate(smoothed):
+        for i, v in enumerate(hist):
             bi = offset + i
-            x_center = self._bar_x0 + bi * self._bstep + self._bw // 2
-
-            # 柱高（保证最小可见高度）
-            min_h = int(2 * s)
-            bh = max(min_h, int(v * max_h))
-
-            # 高度比例用于颜色映射
+            x = self._bar_x0 + bi * self._bstep
+            bh = max(int(2 * self._s), int(v * max_h))
+            # 颜色：静默灰 → 桃粉 → 红
             ratio = bh / max(1, max_h)
-
-            # 四段渐变颜色映射：灰 → 暖灰粉 → 桃粉 → 珊瑚 → 红
-            if ratio < 0.2:
-                color = _lerp_hex(self.BAR_IDLE, self.BAR_LOW, ratio / 0.2)
-            elif ratio < 0.45:
-                color = _lerp_hex(self.BAR_LOW, self.BAR_MID, (ratio - 0.2) / 0.25)
-            elif ratio < 0.75:
-                color = _lerp_hex(self.BAR_MID, self.BAR_HIGH, (ratio - 0.45) / 0.3)
+            if ratio < 0.4:
+                color = _lerp_hex(self.BAR_IDLE, self.BAR_MID, ratio / 0.4)
             else:
-                color = _lerp_hex(self.BAR_HIGH, self.BAR_PEAK, (ratio - 0.75) / 0.25)
-
-            # 柱顶高光色（比主色更亮）
-            tip_color = _lerp_hex(color, self.BAR_TIP_GLOW, 0.35)
-
+                color = _lerp_hex(self.BAR_MID, self.BAR_ACTIVE,
+                                  (ratio - 0.4) / 0.6)
+            # 圆角柱子 — 用 round_rectangle 模拟
+            # tkinter Canvas 不支持 round rect，用 oval + rect 近似
             y0 = cy - bh // 2
             y1 = cy + bh // 2
-
-            # 锥形柱子：中间宽、两端窄（更有机的形态）
-            # 使用多边形模拟锥形 + 圆帽
-            half_w = self._bw / 2.0
-            taper = 0.65  # 末端宽度 = 65% 的中间宽度
-
-            if bh > int(4 * s):
-                # 足够高的柱子：画锥形主体 + 圆帽 + 高光
-                tip_half_w = half_w * taper
-                mid_y_top = cy - bh // 4
-                mid_y_bot = cy + bh // 4
-
-                # 主体：梯形多边形（上窄-中宽-下窄）
-                # 为了更圆润，我们分段画
-                # 上半段：圆帽 + 锥形
-                cap_r = max(1, int(tip_half_w))
+            rr = min(self._bw // 2, 2)  # 柱子小圆角
+            if bh > rr * 2:
                 self._canvas.create_oval(
-                    int(x_center - tip_half_w), y0,
-                    int(x_center + tip_half_w), y0 + cap_r * 2,
-                    fill=tip_color, outline="", tags="bars")
-                # 中间矩形（最宽处）
+                    x, y0, x + self._bw, y0 + rr * 2,
+                    fill=color, outline="", tags="bars")
+                self._canvas.create_oval(
+                    x, y1 - rr * 2, x + self._bw, y1,
+                    fill=color, outline="", tags="bars")
                 self._canvas.create_rectangle(
-                    int(x_center - half_w), mid_y_top,
-                    int(x_center + half_w), mid_y_bot,
+                    x, y0 + rr, x + self._bw, y1 - rr,
                     fill=color, outline="", tags="bars")
-                # 上锥形连接（帽到中间）
-                self._canvas.create_polygon(
-                    int(x_center - tip_half_w), y0 + cap_r,
-                    int(x_center + tip_half_w), y0 + cap_r,
-                    int(x_center + half_w), mid_y_top,
-                    int(x_center - half_w), mid_y_top,
-                    fill=color, outline="", tags="bars")
-                # 下锥形连接（中间到帽）
-                self._canvas.create_polygon(
-                    int(x_center - half_w), mid_y_bot,
-                    int(x_center + half_w), mid_y_bot,
-                    int(x_center + tip_half_w), y1 - cap_r,
-                    int(x_center - tip_half_w), y1 - cap_r,
-                    fill=color, outline="", tags="bars")
-                # 下圆帽
-                self._canvas.create_oval(
-                    int(x_center - tip_half_w), y1 - cap_r * 2,
-                    int(x_center + tip_half_w), y1,
-                    fill=color, outline="", tags="bars")
-
-                # ── 倒影：中心线下方的淡影 ──
-                refl_h = max(1, bh // 5)
-                refl_y0 = y1 + int(1 * s)
-                refl_y1 = refl_y0 + refl_h
-                # 倒影用 stipple 模拟低透明度
-                refl_color = _lerp_hex(color, "#26262A", 0.7)  # 融入深底
-                refl_half_w = tip_half_w * 0.8
-                self._canvas.create_oval(
-                    int(x_center - refl_half_w), refl_y0,
-                    int(x_center + refl_half_w), refl_y1,
-                    fill=refl_color, outline="", stipple="gray12", tags="bars")
             else:
-                # 很短的柱子：简单椭圆
                 self._canvas.create_oval(
-                    int(x_center - half_w), y0,
-                    int(x_center + half_w), y1,
+                    x, y0, x + self._bw, y1,
                     fill=color, outline="", tags="bars")
 
         self._anim_job = self._root.after(50, self._tick_recording)

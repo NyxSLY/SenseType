@@ -2,7 +2,7 @@ MODEL_ID = "iic/SenseVoiceSmall"     # ModelScope模型ID
 DEVICE = "auto"                       # "auto"=自动检测 / "cuda:0" / "cpu"
 LANGUAGE = "auto"                     # auto / zh / en
 USE_ITN = True                        # 自动加标点和逆文本正则化
-HOTKEY = "ctrl+alt+z"                 # 全局快捷键
+HOTKEY = "`"                 # 全局快捷键
 MODE = "toggle"                       # "hold"=按住说话松开识别, "toggle"=按一下开始再按一下停止
 SAMPLE_RATE = 16000                   # 录音采样率
 VAD_MAX_SEGMENT_MS = 30000            # VAD最大分段时长

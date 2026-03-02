@@ -56,51 +56,49 @@ class Overlay:
     _SHADOW_PAD = 16       # 画布额外 padding 以容纳阴影
 
     # ══════════════ Apple 风格配色 ══════════════
-    # 深色磨砂玻璃 — 偏黑灰
-    BG_TOP = (58, 58, 62)          # 顶部：深灰（微亮）
-    BG_BOTTOM = (38, 38, 42)       # 底部：更深灰
-    FROST_ALPHA = 18               # 噪点纹理 alpha（微妙）
-    SHADOW_COLOR = (0, 0, 0, 50)   # 投影稍深
+    # 浅色磨砂玻璃 — 半透明暖白
+    BG_TOP = (255, 255, 255)       # 顶部：纯白
+    BG_BOTTOM = (243, 243, 248)    # 底部：极浅暖灰（偏紫，macOS 味道）
+    FROST_ALPHA = 22               # 噪点纹理 alpha（克制）
+    SHADOW_COLOR = (0, 0, 0, 40)   # 柔和投影
 
-    # 边框 — 极细亮边，在深色底上提示轮廓
-    BORDER_COLOR = (255, 255, 255, 20)
+    # 边框 — 极细、极浅，仅提示边界
+    BORDER_COLOR = (0, 0, 0, 18)   # 几乎看不见的描边
 
-    # 录音指示 — 经典红点
-    REC_DOT_COLOR = "#FF3B30"      # Apple 红（呼吸亮态）
-    REC_DOT_DIM = "#662020"        # 暗红（呼吸暗态，深灰底上对比大）
-    REC_LABEL_COLOR = "#FF6961"    # REC 标签：柔红
+    # 录音指示 — Apple 经典红点
+    REC_DOT_COLOR = "#E8433A"      # SF Symbols 红（录音）— 呼吸亮态
+    REC_DOT_DIM = "#F2CCC9"        # 明显浅粉（呼吸暗态，比 V2 更浅以增大对比）
+    REC_LABEL_COLOR = "#C4372F"    # 标签文字稍深
 
-    # 音量柱 — 暖白单色渐变（让红点做唯一色彩主角）
-    BAR_IDLE = "#4A4A50"           # 静默态：深暖灰（刚好浮出底色）
-    BAR_LOW = "#8A8A90"            # 低音量：中性灰
-    BAR_MID = "#B0B0B4"            # 中间过渡：温暖浅灰
-    BAR_HIGH = "#D0D0D3"           # 高音量：亮灰白
-    BAR_PEAK = "#E2E2E5"           # 峰值：柔暖白（不刺眼）
-    BAR_TIP_GLOW = "#F0F0F2"       # 柱顶高光：接近纯白的暖调
+    # 音量柱 — 温暖柔和的连续渐变色阶
+    BAR_IDLE = "#D1D1D6"           # 静默态：系统灰
+    BAR_LOW = "#E0C8C0"            # 低音量：温暖淡灰粉
+    BAR_MID = "#F09E8C"            # 中间过渡：温暖桃粉
+    BAR_HIGH = "#E8685E"           # 高音量：珊瑚红
+    BAR_PEAK = "#E8433A"           # 峰值：与录音指示同色系
+    BAR_TIP_GLOW = "#FFB8A8"       # 柱顶高光：亮桃色
 
     # 识别中
-    RECOG_TEXT = "#BABABF"         # 柔灰文字（清晰但不抢眼）
-    RECOG_DOT_DIM = "#505054"     # 暗灰点（略高于底色）
-    RECOG_DOT_HI = "#98989D"     # 亮灰点（Apple 系统灰）
+    RECOG_TEXT = "#48484A"         # 深灰（systemGray2）
+    RECOG_DOT_DIM = "#D1D1D6"     # 浅灰
+    RECOG_DOT_HI = "#8E8E93"      # 中灰
 
     # 结果文字
-    RESULT_TEXT = "#E5E5EA"        # Apple systemGray6 — 柔和近白
+    RESULT_TEXT = "#1C1C1E"        # 近黑（label color）
 
     # ── 音量柱尺寸 ──
-    _BASE_BAR_W = 7                # 宽柱子，数量减半
-    _BASE_BAR_GAP = 4              # 更大间距，呼吸感
+    _BASE_BAR_W = 3.5              # 稍宽柱子（比 V2 的 3 更丰满）
+    _BASE_BAR_GAP = 2.2            # 柱间距微调
 
     # ── 自适应增益参数 ──
     _GAIN_WINDOW_SEC = 6.0         # 滚动窗口秒数
     _GAIN_PERCENTILE = 0.80        # 参考峰值百分位
     _GAIN_MIN_REF = 0.05           # 最小参考值（防止静音放大）
-    _SILENCE_GATE = 0.08           # 低于此值视为静音，bar 归零
     _GAIN_DECAY = 0.92             # 参考值指数衰减（平滑下降）
     _GAIN_RISE = 0.3               # 参考值上升速度（快速响应大音量）
 
     # ── 波形平滑 ──
     _SMOOTH_WEIGHT = 0.3           # 邻居影响权重（0=无平滑，0.5=强平滑）
-    _BAR_SCROLL_SPEED = 0.6        # 滚动速度倍率（1.0=每 tick 推一格）
 
     # ── 字体 ──
     # Win11 Segoe UI Variable 最佳；Win10 回退 Segoe UI
@@ -165,9 +163,6 @@ class Overlay:
         self._gain_window_size = int(self._GAIN_WINDOW_SEC * samples_per_sec)
         self._gain_history: deque[float] = deque(maxlen=self._gain_window_size)
 
-        # 滚动速度累加器
-        self._bar_accum = 0.0
-
         # 拖动
         self._drag_ox = 0
         self._drag_oy = 0
@@ -191,7 +186,7 @@ class Overlay:
         self._root.withdraw()
         self._root.overrideredirect(True)
         self._root.attributes("-topmost", True)
-        self._root.attributes("-alpha", 0.85)
+        self._root.attributes("-alpha", 0.96)
         self._root.config(bg=self.TRANSPARENT_KEY)
         self._root.attributes("-transparentcolor", self.TRANSPARENT_KEY)
 
@@ -317,7 +312,7 @@ class Overlay:
         hd = ImageDraw.Draw(hl)
         band = int(h * 0.35)
         for hy in range(band):
-            a = int(15 * (1 - hy / band) ** 2)
+            a = int(30 * (1 - hy / band) ** 2)
             hd.line([(r, hy), (w - r, hy)], fill=(255, 255, 255, a))
         frost = Image.alpha_composite(frost, hl)
 
@@ -385,13 +380,8 @@ class Overlay:
         """自适应增益：根据近期音量动态缩放，防止柱子过早触顶。
 
         返回归一化后的 0.0-1.0 音量值。
-        静音时直接返回 0（不被自适应放大）。
         """
         self._gain_history.append(raw_vol)
-
-        # 静音门限：低于阈值直接归零，不让自适应增益放大底噪
-        if raw_vol < self._SILENCE_GATE:
-            return 0.0
 
         # 计算滚动窗口的参考值（80th 百分位）
         if len(self._gain_history) >= 3:
@@ -440,7 +430,6 @@ class Overlay:
         self._vol_hist.clear()
         self._gain_history.clear()
         self._gain_ref = self._GAIN_MIN_REF
-        self._bar_accum = 0.0
         self._root.deiconify()
         self._draw_bg()
         self._tick_recording()
@@ -455,19 +444,12 @@ class Overlay:
 
         raw_vol = self._recorder.current_volume if self._recorder else 0.0
         scaled_vol = self._update_gain(raw_vol)
-        # 滚动限速：累加到 1.0 才推一格，其余 tick 只更新最后一格
-        self._bar_accum += self._BAR_SCROLL_SPEED
-        if self._bar_accum >= 1.0:
-            self._bar_accum -= 1.0
-            self._vol_hist.append(scaled_vol)
-        elif self._vol_hist:
-            # 未推新格时，更新最新一格为当前值（保持实时响应）
-            self._vol_hist[-1] = scaled_vol
+        self._vol_hist.append(scaled_vol)
 
         # ── 红色录音指示点（V3: 显著呼吸脉冲 — 大小 + 颜色） ──
         self._canvas.delete("ind")
-        # 呼吸因子：宽范围 0.2 ~ 1.0，频率 ~0.6Hz（比心跳稍快）
-        breath_raw = (math.sin(now * 4.0) + 1.0) / 2.0   # 0.0 ~ 1.0
+        # 呼吸因子：宽范围 0.2 ~ 1.0，视觉上非常明显
+        breath_raw = (math.sin(now * 2.5) + 1.0) / 2.0   # 0.0 ~ 1.0
         breath = 0.2 + 0.8 * breath_raw                    # 0.2 ~ 1.0
 
         # 脉冲尺寸：70% ~ 100% 半径
@@ -582,7 +564,7 @@ class Overlay:
                 refl_y0 = y1 + int(1 * s)
                 refl_y1 = refl_y0 + refl_h
                 # 倒影用 stipple 模拟低透明度
-                refl_color = _lerp_hex(color, "#26262A", 0.7)  # 融入深底
+                refl_color = _lerp_hex(color, "#F3F3F8", 0.7)  # 非常淡
                 refl_half_w = tip_half_w * 0.8
                 self._canvas.create_oval(
                     int(x_center - refl_half_w), refl_y0,
